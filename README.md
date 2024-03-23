@@ -21,3 +21,16 @@ Execute o jogo com
 ```shell
 python main.py
 ```
+## To do
+
+#### Partida
+- [ ] Função para verificar o tempo de jogo (verifica se a posição do personagem é diferente da posição de partida após 3m rounds)
+- [ ] Tempo de vida referente à função Battle (no máximo 3x)
+
+#### Batalha
+- [ ] Tempo máximo de 3 rounds
+- [ ] Diálogo de nova batalha ou seguir em frente
+#### Armas
+- [ ] Diálogo de confirmação 
+- [ ] Mostrar suas informações
+- [ ] Atualizar sua localização

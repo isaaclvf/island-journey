@@ -25,13 +25,28 @@ DARKGREEN = (1, 50, 32)
 # Create a grid graph
 G = nx.grid_2d_graph(8, 5)
 
-
 # Function to convert graph coordinates to screen coordinates
 def graph_to_screen(node):
     x, y = node
 
     return x * 100 + 50, y * 100 + 50  # Assuming each grid cell is 100x100 pixels
 
+
+def random_path(graph, source, target):
+    visited = set()
+    stack = [(source, [source])]
+    while stack:
+        node, path = stack.pop()
+        if node == target:
+            return path
+        if node not in visited:
+            visited.add(node)
+            neighbors = list(graph.neighbors(node))
+            if neighbors:
+                random.shuffle(neighbors)  # Randomly shuffle neighbors
+                for neighbor in neighbors:
+                    stack.append((neighbor, path + [neighbor]))
+    return None  # No path exists
 
 class Player:
     def __init__(self, position):
@@ -155,8 +170,8 @@ class Button:
     def __init__(self, text, position):
         self.text = text
         self.position = position
-        self.font = pygame.font.Font(None, 36)
-        self.rect = pygame.Rect(position[0], position[1], 200, 50)
+        self.font = pygame.font.Font(None, 24)
+        self.rect = pygame.Rect(position[0], position[1], 150, 30)
 
     def draw(self, screen):
         pygame.draw.rect(screen, GRAY, self.rect)
@@ -174,22 +189,81 @@ class GameInterface:
             Button("End Turn", (500, 500))
         ]
         self.time = 0
+        self.time_left = 201
 
     def draw(self, screen):
         for button in self.buttons:
             button.draw(screen)
 
         font = pygame.font.Font(None, 36)
-        text_surface = font.render(f"Time: {self.time}", True, BLACK)
+        text_surface = font.render(f"Tempo: {self.time}", True, BLACK)
         screen.blit(text_surface, (50, 50))
+        text_surface2 = font.render(f"Tempo restante: {self.time_left}", True, GRAY)
+        screen.blit(text_surface2, (50, 100))
 
     def handle_click(self, position):
         for button in self.buttons:
             if button.rect.collidepoint(position):
-                print(f"Button {button.text} clicked")
+                return button.text
+        return None
 
     def increment_time(self):
         self.time += 1
+        self.time_left -= 1
+
+
+class GameManager:
+    def __init__(self, graph, player, monsters, weapons, treasure, path):
+        self.graph = graph
+        self.player = player
+        self.monsters = monsters
+        self.weapons = weapons
+        self.treasure = treasure
+        self.path = path
+        self.path_index = 0
+        self.is_forward = True
+
+    def handle_player_movement(self):
+        if self.path is None:
+            return  # No path
+
+        if self.is_forward:
+            # Move player forward on the path
+            if self.path_index < len(self.path):
+                next_position = self.path[self.path_index]
+                self.player.position = next_position
+                self.path_index += 1
+            else:
+                # Reached the end of the path, start walking back
+                self.is_forward = False
+                self.path_index -= 2  # Move back two steps to start walking back
+        else:
+            # Move player back on the path
+            if self.path_index >= 0:
+                next_position = self.path[self.path_index]
+                self.player.position = next_position
+                self.path_index -= 1
+            else:
+                # Reached the start of the path, start walking forward again
+                self.is_forward = True
+                self.path_index = 1
+
+    def handle_player_action(self, action):
+        # Implement logic for player actions (e.g., picking up a weapon, fighting a monster)
+        pass
+
+    def update_game_state(self, clicked_button):
+        # Implement game logic for updating the game state (e.g., monster movement, checking for collisions)
+        if clicked_button.lower() == "move":
+            self.handle_player_movement()
+
+            # Monster movement
+            for monster in self.monsters:
+                neighbors = list(self.graph.neighbors(monster.position))
+                if neighbors:
+                    new_position = random.choice(list(neighbors + [monster.position]))
+                    monster.position = new_position
+
 
 
 # Create instances of player, monsters, weapons, and treasure
@@ -204,14 +278,16 @@ plants = [Plant((1, 4)), Plant((3, 2))]
 boss = Boss((5, 2))
 
 # Find a path from the initial node to the treasure node
-# TODO: Create an algorithm to choose a more interesting path
-path = nx.shortest_path(G, player.position, treasure.position)
+# TODO: Create an algorithm to choose a more interesting path (random)
+path = random_path(G, player.position, treasure.position)
 
 # Create a reversed path from the treasure node back to the initial node
 return_path = path[::-1]
 
 # Create game interface
 game_interface = GameInterface()
+
+game_manager = GameManager(G, player, monsters, weapons, treasure, path)
 
 # Mark the edges along the path as green
 for i in range(len(path) - 1):
@@ -224,7 +300,9 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            game_interface.handle_click(pygame.mouse.get_pos())
+            clicked_button = game_interface.handle_click(pygame.mouse.get_pos())
+            if clicked_button is not None:
+                game_manager.update_game_state(clicked_button)
 
             # Increment time
             game_interface.increment_time()
