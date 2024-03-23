@@ -55,7 +55,7 @@ class Player:
         self.position = position
         self.health = 100
         self.attack_points = 5
-        self.treasure = 0
+        self.treasure = 50
         self.armed = False
         self.weapon = None
 
@@ -181,6 +181,19 @@ class Button:
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
 
+class Bar():
+    def __init__(self, x, y, attribute, max_attribute, color):
+        self.x = x
+        self.y = y
+        self.attribute = attribute
+        self.max_attribute = max_attribute
+        self.color = color
+        self.font = pygame.font.Font(None, 24)
+
+    def draw(self, screen):
+        ratio = self.attribute/self.max_attribute
+        pygame.draw.rect(screen, BLACK, (self.x, self.y, 120, 20))
+        pygame.draw.rect(screen, self.color, (self.x, self.y, 120 * ratio, 20))
 
 class GameInterface:
     def __init__(self):
@@ -196,6 +209,9 @@ class GameInterface:
     def draw(self, screen):
         for button in self.buttons:
             button.draw(screen)
+        health_bar.draw(screen)
+        treasure_bar.draw(screen)
+        attack_bar.draw(screen)
 
         font = pygame.font.Font(None, 36)
         text_surface = font.render(f"Tempo: {self.time}", True, BLACK)
@@ -266,10 +282,15 @@ class GameManager:
                     new_position = random.choice(list(neighbors + [monster.position]))
                     monster.position = new_position
 
+# Player's status
 
 # Create instances of player, monsters, weapons, and treasure
 player = Player((0, 0))
 treasure = Treasure((7, 4))
+
+health_bar = Bar(50, 550, player.health, 100, GREEN)
+treasure_bar = Bar(200, 550, player.treasure, 100, GOLD)
+attack_bar = Bar(350, 550, player.attack_points, 50, DARKRED)
 
 # TODO: Place monsters, weapons and dangers randomly on the graph,
 #  together they should be 20%~30% of the number of edges
