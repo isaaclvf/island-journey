@@ -419,7 +419,7 @@ while running:
     #     player_health -= monster_attack
     #     monster_health -= player_attack
     #
-    #     print(f"Player health: {player_health}, Monster health: {monster_health}")
+    #      print(f"Player health: {player_health}, Monster health: {monster_health}")
 
 # Quit Pygame
 pygame.quit()
