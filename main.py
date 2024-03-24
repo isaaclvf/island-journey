@@ -378,7 +378,7 @@ while running:
 
             # Increment time
             game_interface.increment_time()
-            health_bar.attribute -= 10
+            health_bar.attribute -= 5
 
     # Clear the screen
     screen.fill(WHITE)
