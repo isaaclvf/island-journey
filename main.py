@@ -25,7 +25,11 @@ DARKGREEN = (1, 50, 32)
 # Create a grid graph
 G = nx.grid_2d_graph(8, 5)
 
+background = pygame.image.load("assets/map.png")
 
+def background_map(image):
+    size = pygame.transform.scale(background, (800, 600))
+    screen.blit(size, (0,0))
 # Function to convert graph coordinates to screen coordinates
 def graph_to_screen(node):
     x, y = node
@@ -192,26 +196,26 @@ class Bar():
 
     def draw(self, screen):
         ratio = self.attribute/self.max_attribute
-        pygame.draw.rect(screen, BLACK, (self.x, self.y, 120, 20))
-        pygame.draw.rect(screen, self.color, (self.x, self.y, 120 * ratio, 20))
+        pygame.draw.rect(screen, BLACK, (self.x, self.y, 120, 25))
+        pygame.draw.rect(screen, self.color, (self.x, self.y, 120 * ratio, 25))
+        pygame.draw.rect(screen, BLACK, (self.x, self.y, 120, 25), 2)
+
 
 class GameInterface:
     def __init__(self):
         self.buttons = [
-            Button("Move", (50, 500)),
-            Button("Fight", (200, 500)),
-            Button("Pick Up", (350, 500)),
-            Button("End Turn", (500, 500))
+            Button("Move", (200, 500)),
+            Button("Fight", (200, 545)),
+            Button("Pick Up", (400, 500)),
+            Button("End Turn", (400, 545))
         ]
         self.time = 0
         self.time_left = 201
 
     def draw(self, screen):
+
         for button in self.buttons:
             button.draw(screen)
-        health_bar.draw(screen)
-        treasure_bar.draw(screen)
-        attack_bar.draw(screen)
 
         font = pygame.font.Font(None, 36)
         text_surface = font.render(f"Tempo: {self.time}", True, BLACK)
@@ -228,7 +232,7 @@ class GameInterface:
     def increment_time(self):
         self.time += 1
         self.time_left -= 1
-
+        player.health -= 10
 
 class GameManager:
     def __init__(self, graph, player, monsters, weapons, treasure, path):
@@ -288,9 +292,9 @@ class GameManager:
 player = Player((0, 0))
 treasure = Treasure((7, 4))
 
-health_bar = Bar(50, 550, player.health, 100, GREEN)
-treasure_bar = Bar(200, 550, player.treasure, 100, GOLD)
-attack_bar = Bar(350, 550, player.attack_points, 50, DARKRED)
+health_bar = Bar(50, 500, player.health, 100, GREEN)
+treasure_bar = Bar(50, 530, player.treasure, 100, GOLD)
+attack_bar = Bar(50, 560, player.attack_points, 50, DARKRED)
 
 # TODO: Place monsters, weapons and dangers randomly on the graph,
 #  together they should be 20%~30% of the number of edges
@@ -374,6 +378,7 @@ while running:
 
             # Increment time
             game_interface.increment_time()
+            health_bar.attribute -= 10
 
     # Clear the screen
     screen.fill(WHITE)
@@ -399,6 +404,10 @@ while running:
         plant.draw()
     player.draw()
     treasure.draw()
+
+    health_bar.draw(screen)
+    treasure_bar.draw(screen)
+    attack_bar.draw(screen)
 
     # Draw game interface
     game_interface.draw(screen)
