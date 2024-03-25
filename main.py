@@ -68,7 +68,6 @@ def draw_menu_interface():
     pygame.draw.rect(screen, (0, 0, 0), (670, 470, 110, 70))
     bg2_place()
     pygame.draw.rect(screen, (211, 142, 49), (670, 470, 110, 70), 2)
-    # object dialog
     # dialog
     pygame.draw.rect(screen, (0, 0, 0), (260, 510, 380, 30))
 
