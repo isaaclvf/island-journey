@@ -29,7 +29,7 @@ DARKGREEN = (1, 50, 32)
 G = nx.grid_2d_graph(8, 5)
 m = len(G.edges)
 
-background = pygame.image.load("assets/map.png")
+background = pygame.image.load("assets/old_map.png")
 
 
 def background_map(image):
@@ -41,12 +41,17 @@ def background_map(image):
 def graph_to_screen(node):
     x, y = node
 
-    return x * 85 + 102.5, y * 70 + 85  # Assuming each grid cell is 100x100 pixels
+    return x * 81 + 115, y * 57.5 + 110  #
 
 def draw_menu_interface():
     def character_place():
         size = pygame.transform.scale(character, (90, 110))
         screen.blit(size, (20, 470))
+
+    def bg0_place(w, h, x, y):
+        background = pygame.image.load('assets/backgrounds/menu_background.jpg')
+        size = pygame.transform.scale(background, (w, h))
+        screen.blit(size, (x, y))
     def bg1_place():
         character_background = pygame.image.load('assets/backgrounds/character_background.png')
         size = pygame.transform.scale(character_background, (90, 110))
@@ -59,17 +64,21 @@ def draw_menu_interface():
 
     # menu
     pygame.draw.rect(screen, (240, 223, 153), (0, 450, 800, 150))
+    bg0_place(800, 150, 0, 450)
     # character
-    pygame.draw.rect(screen, (211, 142, 49), (20, 470, 90, 110) )
+    pygame.draw.rect(screen, (109, 54, 22), (20, 470, 90, 110))
     bg1_place()
     character_place()
-    pygame.draw.rect(screen, (211, 142, 49), (20, 470, 90, 110), 2)
+    pygame.draw.rect(screen, (109, 54, 22), (20, 470, 90, 110), 3)
     # object
     pygame.draw.rect(screen, (0, 0, 0), (670, 470, 110, 70))
     bg2_place()
-    pygame.draw.rect(screen, (211, 142, 49), (670, 470, 110, 70), 2)
+    pygame.draw.rect(screen, (109, 54, 22), (670, 470, 110, 70), 3)
     # dialog
     pygame.draw.rect(screen, (0, 0, 0), (260, 510, 380, 30))
+    # time window
+    pygame.draw.rect(screen, (109, 54, 22), ( 630, 20, 150, 40))
+
 
 
 
@@ -220,12 +229,17 @@ class Button:
     def __init__(self, text, position):
         self.text = text
         self.position = position
-        self.font = pygame.font.Font(None, 20)
+        self.font = pygame.font.Font('assets/VT323-Regular.ttf', 24)
         self.rect = pygame.Rect(position[0], position[1], 85, 30)
 
     def draw(self, screen):
-        pygame.draw.rect(screen, GRAY, self.rect)
-        text_surface = self.font.render(self.text, True, BLACK)
+        pygame.draw.rect(screen, (109, 54, 22), self.rect)
+        pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 3, 30))
+        pygame.draw.rect(screen, (58, 30, 13), (self.position[0]+82, self.position[1], 3, 30))
+        pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 85, 3))
+        pygame.draw.rect(screen, (58, 30, 13), (self.position[0], self.position[1]+27, 85, 3))
+
+        text_surface = self.font.render(self.text, True, WHITE)
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
 
@@ -250,7 +264,7 @@ class Bar:
         ratio = self.attribute / self.max_attribute
         pygame.draw.rect(screen, BLACK, (self.x, self.y, 110, 30))
         pygame.draw.rect(screen, self.color, (self.x, self.y, 110 * ratio, 30))
-        rect = pygame.draw.rect(screen, BLACK, (self.x, self.y, 110, 30), 2)
+        rect = pygame.draw.rect(screen, (109, 54, 22), (self.x, self.y, 110, 30), 2)
         size = pygame.transform.scale(self.icon, (30, 30))
         number = font.render(str(self.attribute), True, WHITE)
         screen.blit(size, (self.x + 80, self.y))
@@ -409,6 +423,7 @@ class GameInterface:
             Button("MOVE", (260, 470)),
             Button("Fight", (200, 545)),
             Button("Pick Up", (400, 500)),
+            Button("Drop", (400, 545)),
             Button("End Turn", (400, 545))
         ]
 
@@ -423,11 +438,10 @@ class GameInterface:
             self.buttons[self.PICK_UP].draw(screen)
         self.buttons[self.MOVE].draw(screen)
 
-        font = pygame.font.Font(None, 36)
-        time_surface = font.render(f"Tempo: {self.game_manager.time}", True, BLACK)
-        screen.blit(time_surface, (50, 50))
-        time_left_surface = font.render(f"Tempo restante: {self.game_manager.time_left}", True, GRAY)
-        screen.blit(time_left_surface, (50, 100))
+        time_surface = font.render(f"Tempo: {self.game_manager.time}", True, WHITE)
+        screen.blit(time_surface, (640, 22))
+        # time_left_surface = font.render(f"Tempo restante: {self.game_manager.time_left}", True, GRAY)
+        # screen.blit(time_left_surface, (50, 100))
 
     def handle_click(self, position):
         for button in self.buttons:
