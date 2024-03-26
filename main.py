@@ -41,8 +41,8 @@ def background_map(image):
 # Function to convert graph coordinates to screen coordinates
 def graph_to_screen(node):
     x, y = node
-
     return x * 81 + 115, y * 57.5 + 110  #
+
 
 def draw_menu_interface():
     def character_place():
@@ -53,11 +53,12 @@ def draw_menu_interface():
         background = pygame.image.load('assets/backgrounds/menu_background.jpg')
         size = pygame.transform.scale(background, (w, h))
         screen.blit(size, (x, y))
+
     def bg1_place():
         character_background = pygame.image.load('assets/backgrounds/character_background.png')
         size = pygame.transform.scale(character_background, (90, 110))
         screen.blit(size, (20, 470))
-        
+
     def bg2_place():
         object_background = pygame.image.load('assets/backgrounds/character_background.png')
         size2 = pygame.transform.scale(object_background, (110, 70))
@@ -78,9 +79,7 @@ def draw_menu_interface():
     # dialog
     pygame.draw.rect(screen, (0, 0, 0), (260, 510, 380, 30))
     # time window
-    pygame.draw.rect(screen, (109, 54, 22), ( 630, 20, 150, 40))
-
-
+    pygame.draw.rect(screen, (109, 54, 22), (630, 20, 150, 40))
 
 
 def random_path(graph, source, target):
@@ -107,36 +106,58 @@ class Player:
         self.max_health = 100
         self.attack_points = 5
         self.max_attack_points = 20
-        self.treasure = 50
+        self.treasure = 0
         self.max_treasure = 100
         self.with_treasure = False
         self.armed = False
         self.weapon = None
 
     def pick_weapon(self, weapon):
+        if self.armed:
+            self.drop_weapon()
+
+        weapon.being_used = True
         self.armed = True
         self.attack_points += weapon.attack_bonus
         self.weapon = weapon
 
+        if self.with_treasure:
+            # TODO: Verify if this is correct
+            self.treasure -= self.treasure * (weapon.attack_bonus / 100)
+
     def drop_weapon(self):
         self.attack_points -= self.weapon.attack_bonus
         self.armed = False
-        self.weapon = None
+        self.weapon.being_used = False
+
+        if self.weapon.life > 0:
+            self.weapon.position = self.position
+            self.weapon = None
+            return True  # Weapon can still be used
+        else:
+            del self.weapon
+            return False
 
     def draw(self):
         pygame.draw.circle(screen, (106, 55, 113), graph_to_screen(self.position), 10)
 
-    def attack(self, monster, weapon):
-        monster.health -= self.attack_points
+    def handle_weapon_damage(self):
         if self.armed:
             weapon.life -= 1
-            if weapon.life == 0:
+            if weapon.life <= 0:
+                print("Sua arma foi destruída")
                 self.drop_weapon()
+
+    def cure(self, plant):
+        self.health += plant.cure
+        if self.health > self.max_health:
+            self.health = self.max_health
 
     def recalculate_max_treasure(self):
         last_limit = self.health
         if self.armed == True:
             self.max_treasure -= self.weapon.attack_bonus
+
 
 class Monster:
     def __init__(self, position):
@@ -202,8 +223,9 @@ class Danger:
 class Weapon:
     def __init__(self, position):
         self.position = position
-        self.attack_bonus = 5
+        self.attack_bonus = random.randint(5, 20)
         self.life = 3
+        self.being_used = False
         self.font = pygame.font.Font(None, 24)  # Font for the attack bonus text
 
     def draw(self):
@@ -219,8 +241,11 @@ class Weapon:
 
 
 class Treasure:
+    MAX_TREASURE = 10_000
+
     def __init__(self, position):
         self.position = position
+        self.value = self.MAX_TREASURE
 
     def draw(self):
         pygame.draw.circle(screen, GOLD, graph_to_screen(self.position), 10)
@@ -236,13 +261,14 @@ class Button:
     def draw(self, screen):
         pygame.draw.rect(screen, (109, 54, 22), self.rect)
         pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 3, 30))
-        pygame.draw.rect(screen, (58, 30, 13), (self.position[0]+82, self.position[1], 3, 30))
+        pygame.draw.rect(screen, (58, 30, 13), (self.position[0] + 82, self.position[1], 3, 30))
         pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 85, 3))
-        pygame.draw.rect(screen, (58, 30, 13), (self.position[0], self.position[1]+27, 85, 3))
+        pygame.draw.rect(screen, (58, 30, 13), (self.position[0], self.position[1] + 27, 85, 3))
 
         text_surface = self.font.render(self.text, True, WHITE)
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
+
 
 class DialogBox:
 
@@ -269,9 +295,7 @@ class Bar:
         size = pygame.transform.scale(self.icon, (30, 30))
         number = font.render(str(self.attribute), True, WHITE)
         screen.blit(size, (self.x + 80, self.y))
-        screen.blit(number, (self.x + 5, self.y-2))
-
-
+        screen.blit(number, (self.x + 5, self.y - 2))
 
 
 class DialogBox:
@@ -282,6 +306,7 @@ class DialogBox:
     def draw(self):
         text = font.render(self.title, True, BLACK)
         screen.blit(text, (200, 200))
+
 
 class GameManager:
     def __init__(self,
@@ -316,6 +341,15 @@ class GameManager:
         self.is_collision_with_plant = False
         self.is_collision_with_danger = False
 
+        # Variables for handling battles
+        self.is_battling = False
+        self.is_player_turn = True
+        self.turn_counter = 0
+        self.max_turns = 3
+        self.is_battle_over = False
+        self.is_monster_dead = False
+        self.current_enemy = None
+
         # Variables for tracking the player's movement over the path
         self.path = path
         self.path_index = 0
@@ -327,14 +361,14 @@ class GameManager:
 
         if self.is_forward:
             # Move player forward on the path
+            self.path_index += 1
             if self.path_index < len(self.path):
                 next_position = self.path[self.path_index]
                 self.player.position = next_position
-                self.path_index += 1
             else:
+                self.path_index -= 2  # Move back two steps to start walking back
                 # Reached the end of the path, start walking back
                 self.is_forward = False
-                self.path_index -= 2  # Move back two steps to start walking back
         else:
             # Move player back on the path
             if self.path_index >= 0:
@@ -350,47 +384,194 @@ class GameManager:
         # Implement logic for player actions (e.g., picking up a weapon, fighting a monster)
         pass
 
+    def handle_monsters_movement(self):
+        for monster in self.monsters:
+            neighbors = list(self.graph.neighbors(monster.position))
+            if neighbors:
+                new_position = random.choice(list(neighbors + [monster.position]))
+                monster.position = new_position
+
+    def handle_bosses_movement(self):
+        for boss in self.bosses:
+            neighbors = list(self.graph.neighbors(boss.position))
+            if neighbors:
+                new_position = random.choice(list(neighbors + [boss.position]))
+                boss.position = new_position
+
+    def reset_collision_flags(self):
+        # self.is_collision_with_monster = False
+        # self.is_collision_with_boss = False
+
+        self.is_collision_with_weapon = False
+        self.is_collision_with_treasure = False
+        self.is_collision_with_plant = False
+        self.is_collision_with_danger = False
+
+    def handle_collisions(self):
+        self.reset_collision_flags()
+
+        # Collision detection
+        for entity in self.monsters + self.weapons + self.bosses + self.dangers + self.plants + [self.treasure]:
+            if entity.position == self.player.position:
+                if isinstance(entity, Monster):
+                    print(f"Encontrou um monstro, com ataque: {entity.attack_points} e vida: {entity.health}")
+                    print("Começando batalha, é o seu turno")
+
+                    self.is_battling = True
+                    self.is_collision_with_monster = True
+                    self.current_enemy = entity
+                    self.turn_counter = 0
+
+                if isinstance(entity, Boss):
+                    print(f"Encontrou um chefão, com ataque: {entity.attack_points} e vida: {entity.health}")
+                    print("Começando batalha, é o seu turno")
+
+                    self.is_battling = True
+                    self.is_collision_with_boss = True
+                    self.current_enemy = entity
+                    self.turn_counter = 0
+
+                if isinstance(entity, Weapon):
+                    print(f"Encontrou uma arma com {entity.attack_bonus} pontos de ataque")
+                    self.is_collision_with_weapon = True
+
+                if isinstance(entity, Treasure):
+                    self.is_collision_with_treasure = True
+
+                    print(f"Chegou ao tesouro! O valor total é de {entity.value} moedas de ouro.")
+                    self.player.with_treasure = True
+                    self.player.max_treasure = self.player.health
+                    if self.player.weapon is not None:
+                        self.player.max_treasure -= self.player.weapon.attack_bonus
+
+                    self.player.treasure = entity.value * (self.player.max_treasure / 100)
+
+                    print(
+                        f"Você pode carregar {self.player.max_treasure}% desse tesouro: {self.player.treasure} moedas")
+
+                if isinstance(entity, Danger):
+                    self.is_collision_with_danger = True
+                    # TODO: Implement danger logic
+                    print("Encontrou um perigo... O que o perigo faz mesmo?")
+
+                if isinstance(entity, Plant):
+                    self.is_collision_with_plant = True
+                    print(f"Encontrou uma planta medicinal com {entity.cure} pontos de cura")
+
+    def switch_battle_turns(self):
+        self.is_player_turn = not self.is_player_turn
+        if self.is_player_turn:
+            self.turn_counter += 1
+
     def update_game_state(self, clicked_button):
-        if clicked_button.lower() == "move":
+        if self.is_battling:
+            if self.is_player_turn:
+                if clicked_button is not None and clicked_button.lower() == "fight":
+                    infringed_attack = random.randint(1, self.player.attack_points)
+                    print(f"Seu ataque foi de {infringed_attack} pontos")
+                    self.current_enemy.health -= infringed_attack
+
+                    if self.current_enemy.health <= 0:
+                        self.is_monster_dead = True
+                        print("Você derrotou o inimigo!")
+                    else:
+                        print(f"Agora o inimigo está com {self.current_enemy.health} pontos de vida")
+
+                    self.switch_battle_turns()
+                    self.increment_time()
+
+                elif clicked_button is not None and clicked_button.lower() == "run":
+                    self.player.health -= self.current_enemy.attack_points
+                    # self.player.handle_weapon_damage()  # Running damages the weapon anyway
+                    self.is_battle_over = True
+                    self.is_battling = False
+
+                    print(f"Você fugiu e perdeu {self.current_enemy.attack_points} pontos de vida")
+
+                    # TODO: Verify if this is correct
+                    if self.player.with_treasure:
+                        print("Você perdeu uma parte do tesouro na fuga")
+                        self.player.treasure -= self.player.treasure * (self.current_enemy.attack_points / 100)
+
+                    self.current_enemy = None
+                    self.is_player_turn = True
+                    self.handle_player_movement()
+                    self.increment_time()
+            else:
+                # Enemy's turn
+                print("Turno do inimigo")
+                infringed_attack = random.randint(1, self.current_enemy.attack_points)
+                print(f"O ataque dele foi de {infringed_attack}")
+                self.player.health -= infringed_attack
+
+                # TODO: Verify if this is correct
+                if self.player.with_treasure:
+                    self.player.treasure -= self.player.treasure * (infringed_attack / 100)
+
+                print("Seu turno")
+
+                self.switch_battle_turns()
+                self.increment_time()
+
+            # Check if battle is over
+            if self.player.health <= 0 or self.is_monster_dead:
+                print("A batalha acabou")
+
+                self.is_battle_over = True
+                self.is_battling = False
+                self.current_enemy = None  # TODO: Might be del self.current_enemy (?) here
+                self.turn_counter = 0
+                self.is_monster_dead = False
+
+                self.player.handle_weapon_damage()
+
+                # TODO: Check game over here (player might me dead)
+            elif self.turn_counter >= self.max_turns:
+                self.is_battle_over = True
+                self.is_battling = False
+                self.turn_counter = 0
+
+                self.player.handle_weapon_damage()
+
+                # Enemy runs away
+                print("O inimigo fugiu")
+                if self.current_enemy is not None:
+                    neighbors = list(self.graph.neighbors(self.current_enemy.position))
+                    new_position = random.choice(list(neighbors))
+                    self.current_enemy.position = new_position
+                    self.current_enemy = None
+
+        if clicked_button is not None and clicked_button.lower() == "move":
             self.handle_player_movement()
+            self.handle_monsters_movement()
+            self.handle_bosses_movement()
+            self.handle_collisions()
+            self.increment_time()
 
-            self.is_collision_with_monster = False
-            self.is_collision_with_weapon = False
-            self.is_collision_with_treasure = False
-            self.is_collision_with_boss = False
-            self.is_collision_with_plant = False
-            self.is_collision_with_danger = False
-
-            # Monster movement
-            for monster in self.monsters:
-                neighbors = list(self.graph.neighbors(monster.position))
-                if neighbors:
-                    new_position = random.choice(list(neighbors + [monster.position]))
-                    monster.position = new_position
-
-            # Collision detection
-            for entity in self.monsters + self.weapons + self.bosses + self.dangers + self.plants + [self.treasure]:
+        if clicked_button is not None and clicked_button.lower() == "pick up":
+            for entity in self.weapons + self.plants + [self.treasure]:
                 if entity.position == self.player.position:
-                    if isinstance(entity, Monster):
-                        print("Encontrou um monstro")
-                        self.is_collision_with_monster = True
-                        # TODO: Add proper battle logic here
                     if isinstance(entity, Weapon):
-                        print("Encontrou uma arma")
-                        self.is_collision_with_weapon = True
-                        pass
-                    if isinstance(entity, Treasure):
-                        self.is_collision_with_treasure = True
-                        print("Chegou ao tesouro!")
-                    if isinstance(entity, Boss):
-                        self.is_collision_with_boss = True
-                        print("Encontrou um chefão")
-                    if isinstance(entity, Danger):
-                        self.is_collision_with_danger = True
-                        print("Encontrou um perigo")
+                        print("Você escolheu pegar essa arma")
+                        if self.player.armed:
+                            print("A arma foi trocada")
+                        self.player.pick_weapon(entity)
+                        self.is_collision_with_weapon = False
+
                     if isinstance(entity, Plant):
-                        self.is_collision_with_plant = True
-                        print("Encontrou uma planta medicinal")
+                        print("Você escolheu pegar essa cura")
+                        self.player.cure(entity)
+                        self.is_collision_with_plant = False
+
+                    if isinstance(entity, Treasure):
+                        # TODO: Should the player click on pick up to get the treasure?
+                        print("Agora você com certeza está carregando o tesouro")
+            self.increment_time()
+
+        if clicked_button is not None and clicked_button.lower() == "drop":
+            can_still_use = self.player.drop_weapon()
+            if can_still_use:
+                self.is_collision_with_weapon = True
 
     def game_over(self):
         player_won = False
@@ -399,7 +580,7 @@ class GameManager:
             player_lost = True
             print("Player lost!")
             return -1
-        if self.player.position == (0,0) and self.time != 0:
+        if self.player.position == (0, 0) and self.time != 0:
             player_won = True
             print("Player won!")
             lost = DialogBox("Won", "haha")
@@ -407,17 +588,19 @@ class GameManager:
             return 1
 
         return 0
-            
 
-
-
+    def increment_time(self):
+        self.time += 1
+        self.time_left -= 1
 
 
 class GameInterface:
     MOVE = 0
     FIGHT = 1
     PICK_UP = 2
-    END_TURN = 3
+    DROP = 3
+    END_TURN = 4
+    RUN = 5
 
     def __init__(self, game_manager: GameManager):
         self.buttons = [
@@ -425,19 +608,26 @@ class GameInterface:
             Button("Fight", (200, 545)),
             Button("Pick Up", (400, 500)),
             Button("Drop", (400, 545)),
-            Button("End Turn", (400, 545))
+            Button("End Turn", (400, 545)),
+            Button("RUN", (460, 470))
         ]
 
         self.game_manager = game_manager
 
     def draw(self, screen):
-        if self.game_manager.is_collision_with_monster:
+        if self.game_manager.is_collision_with_weapon \
+                or self.game_manager.is_collision_with_treasure \
+                or self.game_manager.is_collision_with_plant:
+            self.buttons[self.PICK_UP].draw(screen)
+
+        if self.game_manager.is_battling:
             self.buttons[self.FIGHT].draw(screen)
-        if self.game_manager.is_collision_with_weapon:
-            self.buttons[self.PICK_UP].draw(screen)
-        if self.game_manager.is_collision_with_treasure:
-            self.buttons[self.PICK_UP].draw(screen)
-        self.buttons[self.MOVE].draw(screen)
+            self.buttons[self.RUN].draw(screen)
+        else:
+            self.buttons[self.MOVE].draw(screen)
+
+        if self.game_manager.player.armed:
+            self.buttons[self.DROP].draw(screen)
 
         time_surface = font.render(f"Tempo: {self.game_manager.time}", True, WHITE)
         screen.blit(time_surface, (640, 22))
@@ -450,11 +640,6 @@ class GameInterface:
                 return button.text
         return None
 
-    def increment_time(self):
-        self.game_manager.time += 1
-        self.game_manager.time_left -= 1
-        player.health -= 10
-
 
 # Create instances of player, monsters, weapons, and treasure
 player = Player((0, 0))
@@ -465,12 +650,13 @@ heart = pygame.image.load('assets/icons/heart.png')
 sword = pygame.image.load('assets/icons/sword.png')
 chest = pygame.image.load('assets/icons/chest.png')
 health_bar = Bar(120, 470, player.health, 100, (104, 89, 30), heart)
-treasure_bar = Bar(120, 510, player.treasure, 100, (211, 142, 49), chest)
+treasure_bar = Bar(120, 510, player.treasure, Treasure.MAX_TREASURE, (211, 142, 49), chest)
+# TODO: Also show information about the weapon: attack bonus and life
 attack_bar = Bar(120, 550, player.attack_points, 50, (153, 41, 21), sword)
 
 # Place monsters, weapons and dangers randomly on the graph
 # Together they should be 20%~30% of the number of edges
-# TODO: 20%~30% of the number of nodes, actually
+# TODO: 20%~30% of the number of *nodes*, actually
 
 # Calculate the number of entities (monsters, weapons, dangers) based on the percentage range
 num_entities = random.randint(round(m * 0.20), round(m * 0.30))
@@ -535,18 +721,18 @@ for i in range(len(path) - 1):
 # Main loop
 running = True
 while running:
+    clicked_button = None
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             clicked_button = game_interface.handle_click(pygame.mouse.get_pos())
-            if clicked_button is not None:
-                game_interface.increment_time()
 
-                game_manager.update_game_state(clicked_button)
-
-                game_manager.game_over()
-                health_bar.attribute -= 5
+    game_manager.update_game_state(clicked_button)
+    game_manager.game_over()
+    health_bar.attribute = player.health
+    treasure_bar.attribute = player.treasure
+    attack_bar.attribute = player.attack_points
 
     # Clear the screen
     screen.fill(WHITE)
@@ -568,7 +754,8 @@ while running:
         if monster.health > 0:
             monster.draw()
     for weapon in weapons:
-        weapon.draw()
+        if not weapon.being_used:
+            weapon.draw()
     for danger in dangers:
         danger.draw()
     for plant in plants:
