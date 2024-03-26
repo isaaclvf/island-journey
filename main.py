@@ -616,14 +616,14 @@ class GameInterface:
         self.game_manager = game_manager
 
     def draw(self, screen):
-        if self.game_manager.is_collision_with_weapon \
-                or self.game_manager.is_collision_with_treasure \
-                or self.game_manager.is_collision_with_plant:
-            self.buttons[self.PICK_UP].draw(screen)
-
         if self.game_manager.is_battling:
             self.buttons[self.FIGHT].draw(screen)
             self.buttons[self.RUN].draw(screen)
+        elif self.game_manager.is_collision_with_weapon \
+                or self.game_manager.is_collision_with_treasure \
+                or self.game_manager.is_collision_with_plant:
+            self.buttons[self.PICK_UP].draw(screen)
+            self.buttons[self.MOVE].draw(screen)
         else:
             self.buttons[self.MOVE].draw(screen)
 
