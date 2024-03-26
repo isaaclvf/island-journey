@@ -28,6 +28,7 @@ DARKGREEN = (1, 50, 32)
 # Create a grid graph
 G = nx.grid_2d_graph(8, 5)
 m = len(G.edges)
+n = len(G.nodes)
 
 background = pygame.image.load("assets/old_map.png")
 
@@ -469,6 +470,7 @@ attack_bar = Bar(120, 550, player.attack_points, 50, (153, 41, 21), sword)
 
 # Place monsters, weapons and dangers randomly on the graph
 # Together they should be 20%~30% of the number of edges
+# TODO: 20%~30% of the number of nodes, actually
 
 # Calculate the number of entities (monsters, weapons, dangers) based on the percentage range
 num_entities = random.randint(round(m * 0.20), round(m * 0.30))
@@ -492,7 +494,7 @@ def is_empty_position(position, all_entities):
 
 
 # Generate random entities and objects into the island
-for i in range(num_entities):
+for _ in range(num_entities):
     while True:
         # Generate a random position
         position = (random.randint(0, 7), random.randint(0, 4))
@@ -500,7 +502,7 @@ for i in range(num_entities):
         # Check if the position is valid and empty
         if is_valid_position(position) and is_empty_position(position, monsters + weapons + dangers + plants + bosses):
             # Randomly choose the type of entity to place
-            entity_type = random.choice(['monster', 'weapon', 'danger', 'plant', 'boss'])
+            entity_type = random.choice(['monster', 'weapon', 'danger', 'plant'])
             if entity_type == 'monster':
                 monsters.append(Monster(position))
             elif entity_type == 'weapon':
@@ -509,9 +511,15 @@ for i in range(num_entities):
                 dangers.append(Danger(position, damage=1))
             elif entity_type == 'plant':
                 plants.append(Plant(position))
-            elif entity_type == 'boss':
-                bosses.append(Boss(position))
             break  # Exit the loop if entity is successfully placed
+
+# Place three bosses on the island
+for _ in range(3):
+    while True:
+        position = (random.randint(0, 7), random.randint(0, 4))
+        if is_valid_position(position) and is_empty_position(position, monsters + weapons + dangers + plants + bosses):
+            bosses.append(Boss(position))
+            break
 
 # Find a path from the initial node to the treasure node
 path = random_path(G, player.position, treasure.position)
@@ -554,7 +562,8 @@ while running:
         pygame.draw.line(screen, color, graph_to_screen(edge[0]), graph_to_screen(edge[1]), 2)
 
     # Draw entities
-    # boss.draw()
+    for boss in bosses:
+        boss.draw()
     for monster in monsters:
         if monster.health > 0:
             monster.draw()
