@@ -497,6 +497,7 @@ class GameManager:
                     self.is_player_turn = True
                     self.handle_player_movement()
                     self.increment_time()
+                    self.handle_collisions()
             else:
                 # Enemy's turn
                 print("Turno do inimigo")
