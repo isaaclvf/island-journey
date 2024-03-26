@@ -80,35 +80,56 @@ def draw_menu_interface():
     # time window
     pygame.draw.rect(screen, (109, 54, 22), ( 630, 20, 150, 40))
 
-def draw_monster():
+object_rect = pygame.draw.rect(screen, (0, 0, 0), (670, 550, 110, 30))
+def draw_monster(hp, ap):
     object = pygame.image.load('assets/monsters/monstro.png')
     size = pygame.transform.scale(object, (110, 70))
+    message = str(hp) + "h/" + str(ap) + "a"
+    text = font.render(message, True, (255, 255, 255))
+    text_rect = text.get_rect(center=object_rect.center)
     screen.blit(size, (670, 470))
+    screen.blit(text, text_rect)
 
-def draw_plant():
+def draw_plant(hp):
     object = pygame.image.load('assets/objects/planta.png')
     size = pygame.transform.scale(object, (110, 70))
+    message = "+" + str(hp) + "hp"
+    text = font.render(message, True, (255, 255, 255))
+    text_rect = text.get_rect(center = object_rect.center)
     screen.blit(size, (670, 470))
+    screen.blit(text, text_rect)
 
 def draw_treasure():
     object = pygame.image.load('assets/objects/tesouro.png')
     size = pygame.transform.scale(object, (110, 70))
     screen.blit(size, (670, 470))
 
-def draw_weapon():
+def draw_weapon(bonus):
     object = pygame.image.load('assets/objects/arma.png')
     size = pygame.transform.scale(object, (110, 70))
+    message = "+" + str(bonus) + "ap"
+    text = font.render(message, True, (255, 255, 255))
+    text_rect = text.get_rect(center = object_rect.center)
     screen.blit(size, (670, 470))
+    screen.blit(text, text_rect)
 
-def draw_danger():
+def draw_danger(hp):
     object = pygame.image.load('assets/objects/perigo.png')
     size = pygame.transform.scale(object, (110, 70))
+    message = "-" + str(hp) + "hp"
+    text = font.render(message, True, (255, 255, 255))
+    text_rect = text.get_rect(center = object_rect.center)
     screen.blit(size, (670, 470))
+    screen.blit(text, text_rect)
 
-def draw_boss():
+def draw_boss(hp, ap):
     object = pygame.image.load('assets/monsters/jacare.png')
     size = pygame.transform.scale(object, (110, 70))
+    message = str(hp) + "h/" + str(ap) + "a"
+    text = font.render(message, True, (255, 255, 255))
+    text_rect = text.get_rect(center=object_rect.center)
     screen.blit(size, (670, 470))
+    screen.blit(text, text_rect)
 
 
 def random_path(graph, source, target):
@@ -395,7 +416,7 @@ class GameManager:
             self.is_collision_with_boss = False
             self.is_collision_with_plant = False
             self.is_collision_with_danger = False
-
+            self.actual_entity = None
             # Monster movement
             for monster in self.monsters:
                 neighbors = list(self.graph.neighbors(monster.position))
@@ -439,6 +460,7 @@ class GameManager:
                             health_bar.attribute += entity.cure
                             self.player.health += entity.cure
                         print("Encontrou uma planta medicinal, +" + str(entity.cure) + "hp")
+                    self.actual_entity = entity
 
     def game_over(self):
         player_won = False
@@ -475,25 +497,24 @@ class GameInterface:
             Button("DROP", (400, 545)),
             Button("End Turn", (400, 545))
         ]
-
         self.game_manager = game_manager
 
     def draw(self, screen):
         if self.game_manager.is_collision_with_monster:
             self.buttons[self.FIGHT].draw(screen)
-            draw_monster()
+            draw_monster(self.game_manager.actual_entity.health, self.game_manager.actual_entity.attack_points)
         if self.game_manager.is_collision_with_weapon:
             self.buttons[self.PICK_UP].draw(screen)
-            draw_weapon()
+            draw_weapon(self.game_manager.actual_entity.attack_bonus)
         if self.game_manager.is_collision_with_treasure:
             self.buttons[self.PICK_UP].draw(screen)
             draw_treasure()
         if self.game_manager.is_collision_with_plant:
-            draw_plant()
+            draw_plant(self.game_manager.actual_entity.cure)
         if self.game_manager.is_collision_with_danger:
-            draw_danger()
+            draw_danger(self.game_manager.actual_entity.damage)
         if self.game_manager.is_collision_with_boss:
-            draw_boss()
+            draw_boss(self.game_manager.actual_entity.health, self.game_manager.actual_entity.attack_points)
         self.buttons[self.MOVE].draw(screen)
 
         time_surface = font.render(f"Tempo: {self.game_manager.time}", True, WHITE)
