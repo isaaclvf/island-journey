@@ -270,13 +270,6 @@ class Button:
         screen.blit(text_surface, text_rect)
 
 
-class DialogBox:
-
-    def __init__(self, title, description):
-        self.title = title
-        self.description = description
-
-
 class Bar:
     def __init__(self, x, y, attribute, max_attribute, color, icon):
         self.x = x
