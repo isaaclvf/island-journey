@@ -135,7 +135,7 @@ class Player:
         self.max_health = 100
         self.attack_points = 5
         self.max_attack_points = 20
-        self.treasure = 50
+        self.treasure = 0
         self.max_treasure = 100
         self.with_treasure = False
         self.armed = False
@@ -225,10 +225,9 @@ class Plant:
 
 
 class Danger:
-    def __init__(self, position, damage):
+    def __init__(self, position):
         self.position = position
-        self.damage = damage
-        self.cure = random.randrange(5, 15, 5)
+        self.damage = random.randrange(5, 20, 5)
 
     def draw(self):
         circle = pygame.draw.circle(screen, WHITE, graph_to_screen(self.position), 17)
@@ -417,18 +416,29 @@ class GameManager:
                         pass
                     if isinstance(entity, Treasure):
                         self.is_collision_with_treasure = True
+                        # implementar o pick up para poder recolher o tesouro
+                        self.player.treasure = self.player.max_treasure
+                        treasure_bar.attribute = self.player.max_treasure
                         print("Chegou ao tesouro!")
                     if isinstance(entity, Boss):
                         self.is_collision_with_boss = True
                         print("Encontrou um chefão")
                     if isinstance(entity, Danger):
                         self.is_collision_with_danger = True
-                        print("Encontrou um perigo")
+                        self.player.health -= entity.damage
+                        health_bar.attribute -= entity.damage
+                        print("Encontrou um perigo, -" + str(entity.damage) + "hp")
 
                     if isinstance(entity, Plant):
                         self.is_collision_with_plant = True
                         frase = "+" + str(entity.cure) + "hp"
-                        print("Encontrou uma planta medicinal")
+                        if (self.player.health + entity.cure > 100):
+                            health_bar.attribute = 100
+                            self.player.health = 100
+                        else:
+                            health_bar.attribute += entity.cure
+                            self.player.health += entity.cure
+                        print("Encontrou uma planta medicinal, +" + str(entity.cure) + "hp")
 
     def game_over(self):
         player_won = False
@@ -500,7 +510,6 @@ class GameInterface:
     def increment_time(self):
         self.game_manager.time += 1
         self.game_manager.time_left -= 1
-        player.health -= 5
 
 
 # Create instances of player, monsters, weapons, and treasure
@@ -554,7 +563,7 @@ for i in range(num_entities):
             elif entity_type == 'weapon':
                 weapons.append(Weapon(position))
             elif entity_type == 'danger':
-                dangers.append(Danger(position, damage=1))
+                dangers.append(Danger(position))
             elif entity_type == 'plant':
                 plants.append(Plant(position))
             elif entity_type == 'boss':
@@ -586,7 +595,6 @@ while running:
                 game_manager.update_game_state(clicked_button)
 
                 game_manager.game_over()
-                health_bar.attribute -= 5
 
     # Clear the screen
     screen.fill(WHITE)
