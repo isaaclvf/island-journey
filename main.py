@@ -73,13 +73,42 @@ def draw_menu_interface():
     # object
     pygame.draw.rect(screen, (0, 0, 0), (670, 470, 110, 70))
     bg2_place()
+    pygame.draw.rect(screen, (0, 0, 0), (670, 550, 110, 30))
     pygame.draw.rect(screen, (109, 54, 22), (670, 470, 110, 70), 3)
     # dialog
     pygame.draw.rect(screen, (0, 0, 0), (260, 510, 380, 30))
     # time window
     pygame.draw.rect(screen, (109, 54, 22), ( 630, 20, 150, 40))
 
+def draw_monster():
+    object = pygame.image.load('assets/monsters/monstro.png')
+    size = pygame.transform.scale(object, (110, 70))
+    screen.blit(size, (670, 470))
 
+def draw_plant():
+    object = pygame.image.load('assets/objects/planta.png')
+    size = pygame.transform.scale(object, (110, 70))
+    screen.blit(size, (670, 470))
+
+def draw_treasure():
+    object = pygame.image.load('assets/objects/tesouro.png')
+    size = pygame.transform.scale(object, (110, 70))
+    screen.blit(size, (670, 470))
+
+def draw_weapon():
+    object = pygame.image.load('assets/objects/arma.png')
+    size = pygame.transform.scale(object, (110, 70))
+    screen.blit(size, (670, 470))
+
+def draw_danger():
+    object = pygame.image.load('assets/objects/perigo.png')
+    size = pygame.transform.scale(object, (110, 70))
+    screen.blit(size, (670, 470))
+
+def draw_boss():
+    object = pygame.image.load('assets/monsters/jacare.png')
+    size = pygame.transform.scale(object, (110, 70))
+    screen.blit(size, (670, 470))
 
 
 def random_path(graph, source, target):
@@ -123,8 +152,12 @@ class Player:
         self.weapon = None
 
     def draw(self):
-        pygame.draw.circle(screen, (106, 55, 113), graph_to_screen(self.position), 10)
-
+        circle = pygame.draw.circle(screen, WHITE, graph_to_screen(self.position), 17)
+        circle = pygame.draw.circle(screen, (106, 55, 113), graph_to_screen(self.position), 15)
+        load_img = pygame.image.load('assets/icons/jogador.png')
+        img = pygame.transform.scale(load_img, (25, 25))
+        img_rect = img.get_rect(center=circle.center)
+        screen.blit(img, img_rect)
     def attack(self, monster, weapon):
         monster.health -= self.attack_points
         if self.armed:
@@ -144,7 +177,12 @@ class Monster:
         self.attack_points = random.randrange(5, 10, 1)
 
     def draw(self):
-        pygame.draw.circle(screen, RED, graph_to_screen(self.position), 10)
+        circle = pygame.draw.circle(screen, WHITE, graph_to_screen(self.position), 17)
+        circle = pygame.draw.circle(screen, (58, 30, 13), graph_to_screen(self.position), 15)
+        load_img = pygame.image.load('assets/icons/monstro.png')
+        img = pygame.transform.scale(load_img, (25, 25))
+        img_rect = img.get_rect(center=circle.center)
+        screen.blit(img, img_rect)
 
     def attack(self, entity):
         # Entity is the player or another monster
@@ -159,13 +197,12 @@ class Boss:
         self.font = pygame.font.Font(None, 24)  # Font for the attack bonus text
 
     def draw(self):
-        pygame.draw.circle(screen, DARKRED, graph_to_screen(self.position), 10)
-        attack_bonus_text = self.font.render(str(self.attack_points), True, BLACK)
-        text_rect = attack_bonus_text.get_rect(center=graph_to_screen(self.position))
-        text_rect.y -= 20  # Place the text above the circle
-
-        # Blit the attack bonus text onto the screen
-        screen.blit(attack_bonus_text, text_rect)
+        circle = pygame.draw.circle(screen, WHITE, graph_to_screen(self.position), 17)
+        circle = pygame.draw.circle(screen, (109, 54, 22), graph_to_screen(self.position), 15)
+        load_img = pygame.image.load('assets/icons/chefao.png')
+        img = pygame.transform.scale(load_img, (25, 25))
+        img_rect = img.get_rect(center=circle.center)
+        screen.blit(img, img_rect)
 
     def attack(self, entity):
         # Entity is the player or another monster
@@ -179,13 +216,12 @@ class Plant:
         self.font = pygame.font.Font(None, 24)  # Font for the attack bonus text
 
     def draw(self):
-        pygame.draw.circle(screen, DARKGREEN, graph_to_screen(self.position), 10)
-        attack_bonus_text = self.font.render(str(self.cure), True, BLACK)
-        text_rect = attack_bonus_text.get_rect(center=graph_to_screen(self.position))
-        text_rect.y -= 20  # Place the text above the circle
-
-        # Blit the attack bonus text onto the screen
-        screen.blit(attack_bonus_text, text_rect)
+        circle = pygame.draw.circle(screen, WHITE, graph_to_screen(self.position), 17)
+        circle = pygame.draw.circle(screen, (109, 54, 22), graph_to_screen(self.position), 15)
+        load_img = pygame.image.load('assets/icons/planta.png')
+        img = pygame.transform.scale(load_img, (20, 20))
+        img_rect = img.get_rect(center=circle.center)
+        screen.blit(img, img_rect)
 
 
 class Danger:
@@ -195,7 +231,12 @@ class Danger:
         self.cure = random.randrange(5, 15, 5)
 
     def draw(self):
-        pygame.draw.circle(screen, ORANGE, graph_to_screen(self.position), 10)
+        circle = pygame.draw.circle(screen, WHITE, graph_to_screen(self.position), 17)
+        circle = pygame.draw.circle(screen, (109, 54, 22), graph_to_screen(self.position), 15)
+        load_img = pygame.image.load('assets/icons/perigo.png')
+        img = pygame.transform.scale(load_img, (20, 20))
+        img_rect = img.get_rect(center=circle.center)
+        screen.blit(img, img_rect)
 
 
 class Weapon:
@@ -206,15 +247,12 @@ class Weapon:
         self.font = pygame.font.Font(None, 24)  # Font for the attack bonus text
 
     def draw(self):
-        pygame.draw.circle(screen, GRAY, graph_to_screen(self.position), 10)
-
-        # Render the attack bonus text
-        attack_bonus_text = self.font.render(str(self.attack_bonus), True, BLACK)
-        text_rect = attack_bonus_text.get_rect(center=graph_to_screen(self.position))
-        text_rect.y -= 20  # Place the text above the circle
-
-        # Blit the attack bonus text onto the screen
-        screen.blit(attack_bonus_text, text_rect)
+        circle = pygame.draw.circle(screen, WHITE, graph_to_screen(self.position), 17)
+        circle = pygame.draw.circle(screen, (109, 54, 22), graph_to_screen(self.position), 15)
+        load_img = pygame.image.load('assets/icons/arma.png')
+        img = pygame.transform.scale(load_img, (20, 20))
+        img_rect = img.get_rect(center=circle.center)
+        screen.blit(img, img_rect)
 
 
 class Treasure:
@@ -222,7 +260,12 @@ class Treasure:
         self.position = position
 
     def draw(self):
-        pygame.draw.circle(screen, GOLD, graph_to_screen(self.position), 10)
+        circle = pygame.draw.circle(screen, WHITE, graph_to_screen(self.position), 17)
+        circle = pygame.draw.circle(screen, (109, 54, 22), graph_to_screen(self.position), 15)
+        load_img = pygame.image.load('assets/icons/tesouro.png')
+        img = pygame.transform.scale(load_img, (20, 20))
+        img_rect = img.get_rect(center=circle.center)
+        screen.blit(img, img_rect)
 
 
 class Button:
@@ -243,12 +286,6 @@ class Button:
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
 
-class DialogBox:
-
-    def __init__(self, title, description):
-        self.title = title
-        self.description = description
-
 
 class Bar:
     def __init__(self, x, y, attribute, max_attribute, color, icon):
@@ -262,7 +299,7 @@ class Bar:
 
     def draw(self, screen):
         ratio = self.attribute / self.max_attribute
-        pygame.draw.rect(screen, BLACK, (self.x, self.y, 110, 30))
+        pygame.draw.rect(screen, (58, 30, 13), (self.x, self.y, 110, 30))
         pygame.draw.rect(screen, self.color, (self.x, self.y, 110 * ratio, 30))
         rect = pygame.draw.rect(screen, (109, 54, 22), (self.x, self.y, 110, 30), 2)
         size = pygame.transform.scale(self.icon, (30, 30))
@@ -387,8 +424,10 @@ class GameManager:
                     if isinstance(entity, Danger):
                         self.is_collision_with_danger = True
                         print("Encontrou um perigo")
+
                     if isinstance(entity, Plant):
                         self.is_collision_with_plant = True
+                        frase = "+" + str(entity.cure) + "hp"
                         print("Encontrou uma planta medicinal")
 
     def game_over(self):
@@ -421,9 +460,9 @@ class GameInterface:
     def __init__(self, game_manager: GameManager):
         self.buttons = [
             Button("MOVE", (260, 470)),
-            Button("Fight", (200, 545)),
-            Button("Pick Up", (400, 500)),
-            Button("Drop", (400, 545)),
+            Button("FIGHT", (355, 470)),
+            Button("PICK UP", (450, 470)),
+            Button("DROP", (400, 545)),
             Button("End Turn", (400, 545))
         ]
 
@@ -432,10 +471,19 @@ class GameInterface:
     def draw(self, screen):
         if self.game_manager.is_collision_with_monster:
             self.buttons[self.FIGHT].draw(screen)
+            draw_monster()
         if self.game_manager.is_collision_with_weapon:
             self.buttons[self.PICK_UP].draw(screen)
+            draw_weapon()
         if self.game_manager.is_collision_with_treasure:
             self.buttons[self.PICK_UP].draw(screen)
+            draw_treasure()
+        if self.game_manager.is_collision_with_plant:
+            draw_plant()
+        if self.game_manager.is_collision_with_danger:
+            draw_danger()
+        if self.game_manager.is_collision_with_boss:
+            draw_boss()
         self.buttons[self.MOVE].draw(screen)
 
         time_surface = font.render(f"Tempo: {self.game_manager.time}", True, WHITE)
@@ -452,7 +500,7 @@ class GameInterface:
     def increment_time(self):
         self.game_manager.time += 1
         self.game_manager.time_left -= 1
-        player.health -= 10
+        player.health -= 5
 
 
 # Create instances of player, monsters, weapons, and treasure
@@ -520,9 +568,9 @@ path = random_path(G, player.position, treasure.position)
 game_manager = GameManager(G, path, player, treasure, monsters, weapons, plants, bosses, dangers)
 game_interface = GameInterface(game_manager)
 
-# Mark the edges along the path as green
+# Mark the edges along the path as black
 for i in range(len(path) - 1):
-    G[path[i]][path[i + 1]]['color'] = GREEN
+    G[path[i]][path[i + 1]]['color'] = (171, 171, 171)
 
 # Main loop
 running = True
@@ -550,11 +598,13 @@ while running:
         pygame.draw.circle(screen, BLACK, graph_to_screen(node), 5)
 
     for edge in G.edges:
-        color = G[edge[0]][edge[1]].get('color', BLUE)
+        color = G[edge[0]][edge[1]].get('color', BLACK)
         pygame.draw.line(screen, color, graph_to_screen(edge[0]), graph_to_screen(edge[1]), 2)
 
     # Draw entities
-    # boss.draw()
+    for boss in bosses:
+        if boss.health > 0:
+            boss.draw()
     for monster in monsters:
         if monster.health > 0:
             monster.draw()
