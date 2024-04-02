@@ -223,6 +223,12 @@ class Player:
         if self.health > self.max_health:
             self.health = self.max_health
 
+    def damage(self, danger):
+        self.health -= danger.damage
+        if self.health < 0:
+            self.health = 0
+
+
     def recalculate_max_treasure(self):
         last_limit = self.health
         if self.armed == True:
@@ -461,6 +467,8 @@ class GameManager:
                 self.path_index -= 2  # Move back two steps to start walking back
                 # Reached the end of the path, start walking back
                 self.is_forward = False
+                next_position = self.path[self.path_index]
+                self.player.position = next_position
         else:
             # Move player back on the path
             if self.path_index >= 0:
@@ -549,7 +557,10 @@ class GameManager:
                     self.is_collision_with_danger = True
                     self.static_entity = entity
                     # TODO: Implement danger logic
-                    print("Encontrou um perigo... O que o perigo faz mesmo?")
+                    print(f"Encontrou um perigo que lhe causou {entity.damage} pontos de dano")
+                    self.player.damage(entity)
+                    if self.player.health <= 0:
+                        self.handle_player_death()
                 elif isinstance(entity, Plant):
                     self.is_collision_with_plant = True
                     self.static_entity = entity
@@ -608,7 +619,7 @@ class GameManager:
                     self.switch_battle_turns()
                     self.increment_time()
 
-                elif clicked_button is not None and clicked_button.lower() == "run":
+                elif clicked_button is not None and clicked_button.lower() == "leave":
                     self.player.health -= self.current_enemy.attack_points
                     # self.player.handle_weapon_damage()  # Running damages the weapon anyway
                     self.is_battle_over = True
@@ -718,7 +729,8 @@ class GameManager:
     def handle_player_death(self):
         if self.current_checkpoint:
             # Respawn player at the last checkpoint
-            self.player.drop_weapon()
+            if self.player.armed:
+                self.player.drop_weapon()
             self.player.position = self.current_checkpoint
             self.player.health = 100  # Reset player's health
             self.current_checkpoint = None
@@ -729,40 +741,44 @@ class GameManager:
 
 class GameInterface:
     MOVE = 0
-    FIGHT = 1
-    PICK_UP = 2
-    END_TURN = 3
+    PICK_UP = 1
+    DROP = 2
+    FIGHT = 3
+    LEAVE = 4
 
     def __init__(self, game_manager: GameManager):
         self.buttons = [
             Button("MOVE", (260, 470)),
-            Button("FIGHT", (336, 470)),
-            Button("PICK UP", (412, 470)),
-            Button("DROP", (488, 545)),
-            Button("End Turn", (564, 545))
+            Button("PICK UP", (336, 470)),
+            Button("DROP", (412, 470)),
+            Button("FIGHT", (488, 470)),
+            Button("LEAVE", (564, 470))
         ]
         self.game_manager = game_manager
 
     def draw(self, screen):
-        if self.game_manager.is_collision_with_monster:
-            self.buttons[self.FIGHT].draw(screen)
-            draw_monster(self.game_manager.dynamic_entity.health, self.game_manager.dynamic_entity.attack_points)
-        if self.game_manager.is_collision_with_weapon:
-            self.buttons[self.PICK_UP].draw(screen)
-            draw_weapon(self.game_manager.static_entity.attack_bonus)
-        if self.game_manager.is_collision_with_treasure:
-            self.buttons[self.PICK_UP].draw(screen)
-            draw_treasure()
-        if self.game_manager.is_collision_with_plant:
-            draw_plant(self.game_manager.static_entity.cure)
-        if self.game_manager.is_collision_with_danger:
-            draw_danger(self.game_manager.static_entity.damage)
-        if self.game_manager.is_collision_with_boss:
-            draw_boss(self.game_manager.dynamic_entity.health, self.game_manager.dynamic_entity.attack_points)
-        self.buttons[self.MOVE].draw(screen)
+        for button in self.buttons:
+            button.active = False
+
+        if self.game_manager.is_battling:
+            self.buttons[self.FIGHT].active = True
+            self.buttons[self.LEAVE].active = True
+        elif self.game_manager.is_collision_with_weapon \
+                or self.game_manager.is_collision_with_treasure \
+                or self.game_manager.is_collision_with_plant:
+            self.buttons[self.PICK_UP].active = True
+            self.buttons[self.MOVE].active = True
+        else:
+            self.buttons[self.MOVE].active = True
 
         if self.game_manager.player.armed:
-            self.buttons[self.DROP].draw(screen)
+            self.buttons[self.DROP].active = True
+
+        self.buttons[self.MOVE].draw(screen)
+        self.buttons[self.DROP].draw(screen)
+        self.buttons[self.PICK_UP].draw(screen)
+        self.buttons[self.FIGHT].draw(screen)
+        self.buttons[self.LEAVE].draw(screen)
 
         time_surface = font.render(f"Tempo: {self.game_manager.time}", True, WHITE)
         screen.blit(time_surface, (640, 22))
