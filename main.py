@@ -335,18 +335,29 @@ class Button:
         self.position = position
         self.font = pygame.font.Font('assets/VT323-Regular.ttf', 24)
         self.rect = pygame.Rect(position[0], position[1], 64, 30)
+        self.active = True
 
     def draw(self, screen):
-        pygame.draw.rect(screen, (109, 54, 22), self.rect)
-        pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 3, 30))
-        pygame.draw.rect(screen, (58, 30, 13), (self.position[0] + 61, self.position[1], 3, 30))
-        pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 64, 3))
-        pygame.draw.rect(screen, (58, 30, 13), (self.position[0], self.position[1] + 27, 64, 3))
+        if self.active == True:
+            pygame.draw.rect(screen, (109, 54, 22), self.rect)
+            pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 3, 30))
+            pygame.draw.rect(screen, (58, 30, 13), (self.position[0] + 61, self.position[1], 3, 30))
+            pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 64, 3))
+            pygame.draw.rect(screen, (58, 30, 13), (self.position[0], self.position[1] + 27, 64, 3))
 
-        text_surface = self.font.render(self.text, True, WHITE)
-        text_rect = text_surface.get_rect(center=self.rect.center)
-        screen.blit(text_surface, text_rect)
+            text_surface = self.font.render(self.text, True, WHITE)
+            text_rect = text_surface.get_rect(center=self.rect.center)
+            screen.blit(text_surface, text_rect)
+        else:
+            pygame.draw.rect(screen, (109, 54, 22), self.rect)
+            pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 3, 30))
+            pygame.draw.rect(screen, (58, 30, 13), (self.position[0] + 61, self.position[1], 3, 30))
+            pygame.draw.rect(screen, (142, 101, 77), (self.position[0], self.position[1], 64, 3))
+            pygame.draw.rect(screen, (58, 30, 13), (self.position[0], self.position[1] + 27, 64, 3))
 
+            text_surface = self.font.render(self.text, True, GRAY)
+            text_rect = text_surface.get_rect(center=self.rect.center)
+            screen.blit(text_surface, text_rect)
 
 class Bar:
     def __init__(self, x, y, attribute, max_attribute, color, icon):
@@ -468,21 +479,27 @@ class GameManager:
                 monster.position = new_position
 
             # Check for collisions
-            for i in range(len(self.monsters)):
-                for j in range(i + 1, len(self.monsters)):
-                    if self.monsters[i].position == self.monsters[j].position:
-                        monster1, monster2 = self.monsters[i], self.monsters[j]
+            # Create a dictionary to store the positions of all monsters
+            monster_positions = {}
+            for monster in self.monsters:
+                position = monster.position
+                if position in monster_positions:
+                    monster_positions[position].append(monster)
+                else:
+                    monster_positions[position] = [monster]
 
-                        if monster1.health <= monster2.health:
-                            monster2.health -= monster1.attack_points
-                            self.monsters.remove(monster1)
+            # Check for collisions between monsters at the same position
+            for position, monsters_at_position in monster_positions.items():
+                if len(monsters_at_position) > 1:
+                    biggest_monster = max(monsters_at_position, key=lambda x: x.health)
+                    smallest_monster = min(monsters_at_position, key=lambda x: x.health)
+                    other_monsters = [monster for monster in monsters_at_position if monster is not biggest_monster and monster is not smallest_monster]
+                    biggest_monster.health -= smallest_monster.attack_points
+                    for monster in other_monsters:
+                        monster.health -= biggest_monster.attack_points
+                    self.monsters.remove(smallest_monster)
+                    self.spawn_new_monster()
 
-                            self.spawn_new_monster()
-                        else:
-                            monster1.health -= monster2.attack_points
-                            self.monsters.remove(monster1)
-
-                            self.spawn_new_monster()
 
     def handle_bosses_movement(self):
         for boss in self.bosses:
@@ -754,7 +771,7 @@ class GameInterface:
 
     def handle_click(self, position):
         for button in self.buttons:
-            if button.rect.collidepoint(position):
+            if button.rect.collidepoint(position) and button.active:
                 return button.text
         return None
 
