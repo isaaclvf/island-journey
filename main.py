@@ -352,7 +352,7 @@ class GameManager:
         self.player_won = False
 
         # Checkpoints
-        self.checkpoints = []
+        self.checkpoints = [path[len(path)//2]]
         self.current_checkpoint = None
 
     def handle_player_movement(self):
@@ -476,6 +476,11 @@ class GameManager:
                     self.is_collision_with_plant = True
                     print(f"Encontrou uma planta medicinal com {entity.cure} pontos de cura")
 
+        for checkpoint in self.checkpoints:
+            if self.player.position == checkpoint:
+                print("Você encontrou um checkpoint!")
+                self.current_checkpoint = checkpoint
+
     def switch_battle_turns(self):
         self.is_player_turn = not self.is_player_turn
         if self.is_player_turn:
@@ -545,7 +550,9 @@ class GameManager:
 
                 self.player.handle_weapon_damage()
 
-                # TODO: Check game over here (player might me dead)
+                if self.player.health <= 0:
+                    self.handle_player_death()
+
             elif self.turn_counter >= self.max_turns:
                 self.is_battle_over = True
                 self.is_battling = False
@@ -618,6 +625,14 @@ class GameManager:
     def has_player_won(self):
         self.player_won = self.player.position == (0, 0) and self.time != 0
         return self.player_won
+
+    def handle_player_death(self):
+        if self.current_checkpoint:
+            # Respawn player at the last checkpoint
+            self.player.drop_weapon()
+            self.player.position = self.current_checkpoint
+            self.player.health = 100  # Reset player's health
+            self.current_checkpoint = None
 
     def increment_time(self):
         self.time += 1
