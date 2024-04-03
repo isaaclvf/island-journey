@@ -13,6 +13,10 @@ pygame.display.set_caption("Jogo Grafos")
 font = pygame.font.Font('assets/VT323-Regular.ttf', 32)
 character = pygame.image.load('assets/personagem.png')
 
+tela_inicio = pygame.image.load("assets/screens/telaInicio.png")
+tela_morte = pygame.image.load("assets/screens/telaMorte.png")
+tela_vitoria = pygame.image.load("assets/screens/telaVitoria.png")
+
 # Set colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -33,10 +37,15 @@ n = len(G.nodes)
 background = pygame.image.load("assets/old_map.png")
 object_rect = pygame.draw.rect(screen, (0, 0, 0), (670, 550, 110, 30))
 
+def update_i():
+    i = random.randrange(1, 3, 1)
+    return i
+
+i = update_i()
+
 def background_map(image):
     size = pygame.transform.scale(background, (800, 450))
     screen.blit(size, (0, 0))
-
 
 # Function to convert graph coordinates to screen coordinates
 def graph_to_screen(node):
@@ -78,8 +87,6 @@ def draw_menu_interface():
     bg2_place()
     pygame.draw.rect(screen, (0, 0, 0), (670, 550, 110, 30))
     pygame.draw.rect(screen, (109, 54, 22), (670, 470, 110, 70), 3)
-    # Dialog window
-    pygame.draw.rect(screen, (0, 0, 0), (260, 510, 380, 70))
     # Time window
     pygame.draw.rect(screen, (109, 54, 22), (630, 20, 150, 40))
 
@@ -88,12 +95,16 @@ def draw_menu_interface():
 def draw_monster(hp, ap):
     object = pygame.image.load('assets/monsters/monstro.png')
     size = pygame.transform.scale(object, (110, 70))
-    message = "Você achou um monstro!\nTome cuidado."
-    rect = pygame.draw.rect(screen, (0, 0, 0), (260, 510, 380, 70))
-    text = font.render(message, True, (255, 255, 255))
-    text_rect = text.get_rect(center=rect.center)
+    message1 = "Você achou um monstro com"
+    rect1 = pygame.draw.rect(screen, (0, 0, 0), (260, 515, 380, 30))
+    text1 = font.render(message1, True, (255, 255, 255))
+    text1_rect = text1.get_rect(center=rect1.center)
+    message1 = "Você achou um monstro com"
+    rect1 = pygame.draw.rect(screen, (0, 0, 0), (260, 515, 380, 30))
+    text1 = font.render(message1, True, (255, 255, 255))
+    text1_rect = text1.get_rect(center=rect1.center)
     screen.blit(size, (670, 470))
-    screen.blit(text, text_rect)
+    screen.blit(text1, text1_rect)
 
 
 def draw_plant(hp):
@@ -132,14 +143,19 @@ def draw_danger(hp):
     screen.blit(text, text_rect)
 
 
-def draw_boss(hp, ap):
-    object = pygame.image.load('assets/monsters/jacare.png')
-    size = pygame.transform.scale(object, (110, 70))
-    message = str(hp) + "h/" + str(ap) + "a"
-    text = font.render(message, True, (255, 255, 255))
-    text_rect = text.get_rect(center=object_rect.center)
-    screen.blit(size, (670, 470))
-    screen.blit(text, text_rect)
+def draw_boss(hp, ap, i):
+    if i == 1:
+        object = pygame.image.load('assets/monsters/jacare.png')
+        size = pygame.transform.scale(object, (110, 70))
+        screen.blit(size, (670, 470))
+    elif i == 2:
+        object = pygame.image.load('assets/monsters/onca.png')
+        size = pygame.transform.scale(object, (110, 70))
+        screen.blit(size, (670, 470))
+    else:
+        object = pygame.image.load('assets/monsters/formigas.png')
+        size = pygame.transform.scale(object, (110, 70))
+        screen.blit(size, (670, 470))
 
 # Gamer's path generator
 def random_path(graph, source, target):
@@ -211,6 +227,7 @@ class Player:
             if weapon.life <= 0:
                 print("Sua arma foi destruída")
                 self.drop_weapon()
+
     def attack(self, monster, weapon):
         monster.health -= self.attack_points
         if self.armed:
@@ -227,7 +244,6 @@ class Player:
         self.health -= danger.damage
         if self.health < 0:
             self.health = 0
-
 
     def recalculate_max_treasure(self):
         last_limit = self.health
@@ -322,6 +338,7 @@ class Weapon:
 
 class Treasure:
     MAX_TREASURE = 10_000
+
     def __init__(self, position):
         self.position = position
         self.value = self.MAX_TREASURE
@@ -365,6 +382,7 @@ class Button:
             text_rect = text_surface.get_rect(center=self.rect.center)
             screen.blit(text_surface, text_rect)
 
+
 class Bar:
     def __init__(self, x, y, attribute, max_attribute, color, icon):
         self.x = x
@@ -385,15 +403,23 @@ class Bar:
         screen.blit(size, (self.x + 80, self.y))
         screen.blit(number, (self.x + 5, self.y - 2))
 
+
 # IMPLEMENTAR DIALOGBOX
 class DialogBox:
-    def __init__(self, title, description):
-        self.title = title
-        self.description = description
+    def __init__(self, message_1, message_2):
+        self.message_1 = message_1
+        self.message_2 = message_2
 
     def draw(self):
-        text = font.render(self.title, True, BLACK)
-        screen.blit(text, (200, 200))
+        background = pygame.draw.rect(screen, (0, 0, 0), (260, 510, 380, 70))
+        rect1 = pygame.draw.rect(screen, (0, 0, 0), (260, 515, 380, 30))
+        text1 = font.render(self.message_1, True, (255, 255, 255))
+        text1_rect = text1.get_rect(center=rect1.center)
+        rect2 = pygame.draw.rect(screen, (0, 0, 0), (260, 545, 380, 30))
+        text2 = font.render(self.message_2, True, (255, 255, 255))
+        text2_rect = text2.get_rect(center=rect2.center)
+        screen.blit(text1, text1_rect)
+        screen.blit(text2, text2_rect)
 
 
 class GameManager:
@@ -438,7 +464,9 @@ class GameManager:
         self.max_turns = 3
         self.is_battle_over = False
         self.is_monster_dead = False
+        self.is_boss_dead = False
         self.current_enemy = None
+        self.last_attack = 0
 
         # Variables for tracking the player's movement over the path
         self.path = path
@@ -464,21 +492,38 @@ class GameManager:
                 next_position = self.path[self.path_index]
                 self.player.position = next_position
             else:
-                self.path_index -= 2  # Move back two steps to start walking back
+                # Choose a new path to go back
+                self.path = random_path(self.graph, (0,0), (7,4))
+                self.checkpoints = [self.path[len(self.path) // 2]]
+
+                self.update_graph_colors()
+
+                self.path_index = len(self.path) - 1
                 # Reached the end of the path, start walking back
                 self.is_forward = False
                 next_position = self.path[self.path_index]
                 self.player.position = next_position
         else:
             # Move player back on the path
+            self.path_index -= 1
             if self.path_index >= 0:
                 next_position = self.path[self.path_index]
                 self.player.position = next_position
-                self.path_index -= 1
             else:
                 # Reached the start of the path, start walking forward again
                 self.is_forward = True
                 self.path_index = 1
+
+    def update_graph_colors(self):
+        # Set all edge colors to blue
+        for u, v in self.graph.edges():
+            self.graph[u][v]['color'] = BLUE
+
+        # Update edges along the path to a different color
+        for i in range(len(self.path) - 1):
+            u, v = self.path[i], self.path[i + 1]
+            self.graph[u][v]['color'] = (171, 171, 171)
+
     def handle_monsters_movement(self):
         for monster in self.monsters:
             neighbors = list(self.graph.neighbors(monster.position))
@@ -501,13 +546,13 @@ class GameManager:
                 if len(monsters_at_position) > 1:
                     biggest_monster = max(monsters_at_position, key=lambda x: x.health)
                     smallest_monster = min(monsters_at_position, key=lambda x: x.health)
-                    other_monsters = [monster for monster in monsters_at_position if monster is not biggest_monster and monster is not smallest_monster]
+                    other_monsters = [monster for monster in monsters_at_position if
+                                      monster is not biggest_monster and monster is not smallest_monster]
                     biggest_monster.health -= smallest_monster.attack_points
                     for monster in other_monsters:
                         monster.health -= biggest_monster.attack_points
                     self.monsters.remove(smallest_monster)
                     self.spawn_new_monster()
-
 
     def handle_bosses_movement(self):
         for boss in self.bosses:
@@ -543,6 +588,7 @@ class GameManager:
                 elif isinstance(entity, Treasure):
                     self.is_collision_with_treasure = True
                     self.static_entity = entity
+                    draw_treasure()
                     print(f"Chegou ao tesouro! O valor total é de {entity.value} moedas de ouro.")
                     self.player.with_treasure = True
                     self.player.max_treasure = self.player.health
@@ -556,6 +602,7 @@ class GameManager:
                 elif isinstance(entity, Danger):
                     self.is_collision_with_danger = True
                     self.static_entity = entity
+                    draw_danger(entity.damage)
                     # TODO: Implement danger logic
                     print(f"Encontrou um perigo que lhe causou {entity.damage} pontos de dano")
                     self.player.damage(entity)
@@ -612,6 +659,8 @@ class GameManager:
 
                     if self.current_enemy.health <= 0:
                         self.is_monster_dead = True
+                        self.is_collision_with_boss = False
+                        self.is_collision_with_monster = False
                         print("Você derrotou o inimigo!")
                     else:
                         print(f"Agora o inimigo está com {self.current_enemy.health} pontos de vida")
@@ -624,6 +673,9 @@ class GameManager:
                     # self.player.handle_weapon_damage()  # Running damages the weapon anyway
                     self.is_battle_over = True
                     self.is_battling = False
+
+                    self.is_collision_with_boss = False
+                    self.is_collision_with_monster = False
 
                     print(f"Você fugiu e perdeu {self.current_enemy.attack_points} pontos de vida")
 
@@ -664,6 +716,9 @@ class GameManager:
                 self.turn_counter = 0
                 self.is_monster_dead = False
 
+                self.is_collision_with_boss = False
+                self.is_collision_with_monster = False
+
                 self.player.handle_weapon_damage()
 
                 if self.player.health <= 0:
@@ -678,6 +733,8 @@ class GameManager:
 
                 # Enemy runs away
                 print("O inimigo fugiu")
+                self.is_collision_with_boss = False
+                self.is_collision_with_monster = False
                 if self.current_enemy is not None:
                     neighbors = list(self.graph.neighbors(self.current_enemy.position))
                     new_position = random.choice(list(neighbors))
@@ -685,6 +742,7 @@ class GameManager:
                     self.current_enemy = None
 
         if clicked_button is not None and clicked_button.lower() == "move":
+            update_i()
             self.handle_player_movement()
             self.handle_monsters_movement()
             self.handle_bosses_movement()
@@ -720,7 +778,8 @@ class GameManager:
 
     def is_game_over(self):
         self.game_over = self.player.health == 0 or self.time_left == 0
-        return self.game_over
+        self.player_won = self.player.position == (0, 0) and self.time != 0
+        return self.game_over or self.player_won
 
     def has_player_won(self):
         self.player_won = self.player.position == (0, 0) and self.time != 0
@@ -739,6 +798,7 @@ class GameManager:
         self.time += 1
         self.time_left -= 1
 
+
 class GameInterface:
     MOVE = 0
     PICK_UP = 1
@@ -746,7 +806,7 @@ class GameInterface:
     FIGHT = 3
     LEAVE = 4
 
-    def __init__(self, game_manager: GameManager):
+    def __init__(self, game_manager: GameManager, dialog_box: DialogBox):
         self.buttons = [
             Button("MOVE", (260, 470)),
             Button("PICK UP", (336, 470)),
@@ -755,8 +815,12 @@ class GameInterface:
             Button("LEAVE", (564, 470))
         ]
         self.game_manager = game_manager
+        self.dialog_box = dialog_box
+
+    i = random.randrange(1, 3, 1)
 
     def draw(self, screen):
+
         for button in self.buttons:
             button.active = False
 
@@ -774,11 +838,68 @@ class GameInterface:
         if self.game_manager.player.armed:
             self.buttons[self.DROP].active = True
 
+        if self.game_manager.is_collision_with_monster:
+            self.buttons[self.FIGHT].draw(screen)
+            health, attack = self.game_manager.dynamic_entity.health, self.game_manager.dynamic_entity.attack_points
+            draw_monster(health, attack)
+            self.dialog_box.message_1 = "Você achou um monstro com"
+            self.dialog_box.message_2 = f"HP: {health} e AP: {attack}. Cuidado!"
+        if self.game_manager.is_collision_with_weapon:
+            self.buttons[self.PICK_UP].draw(screen)
+            attack_bonus = self.game_manager.static_entity.attack_bonus
+            draw_weapon(attack_bonus)
+            self.dialog_box.message_1 = "Você achou uma arma com"
+            self.dialog_box.message_2 = f"bônus de {attack_bonus}AP. Bom proveito!"
+        if self.game_manager.is_collision_with_treasure:
+            self.game_manager.player.with_treasure = True
+            self.game_manager.player.max_treasure = self.game_manager.player.health
+            if self.game_manager.player.weapon is not None:
+                self.game_manager.player.max_treasure -= self.game_manager.player.weapon.attack_bonus
+
+            self.game_manager.player.treasure = self.game_manager.treasure.value * (self.game_manager.player.max_treasure / 100)
+            treasure = int(self.game_manager.player.treasure)
+            self.buttons[self.PICK_UP].draw(screen)
+            draw_treasure()
+            self.dialog_box.message_1 = "Você encontrou o tesouro!"
+            self.dialog_box.message_2 = f"Leve até {treasure} moedas."
+        if self.game_manager.is_collision_with_plant:
+            cure = self.game_manager.static_entity.cure
+            draw_plant(cure)
+            self.dialog_box.message_1 = "Você achou uma planta com"
+            self.dialog_box.message_2 = f"cura de {cure}HP. Bom proveito!"
+        if self.game_manager.is_collision_with_danger:
+            damage = self.game_manager.static_entity.damage
+            draw_danger(damage)
+            self.dialog_box.message_1 = "Tome cuidado! Você"
+            self.dialog_box.message_2 = f"acabou de perder {damage}HP."
+        if self.game_manager.is_collision_with_boss:
+            health, attack = self.game_manager.dynamic_entity.health, self.game_manager.dynamic_entity.attack_points
+            draw_boss(health, attack, i)
+            if i == 1:
+                self.dialog_box.message_1 = "Você achou um jacarezão com"
+                self.dialog_box.message_2 = f"HP: {health} e AP: {attack}. Cuidado!"
+            elif i == 2:
+                self.dialog_box.message_1 = "Você achou uma onça com"
+                self.dialog_box.message_2 = f"HP: {health} e AP: {attack}. Cuidado!"
+            else:
+                self.dialog_box.message_1 = "Você achou formigas com"
+                self.dialog_box.message_2 = f"HP: {health} e AP: {attack}. Cuidado!"
+
+        if not (self.game_manager.is_collision_with_monster or \
+                self.game_manager.is_collision_with_weapon or \
+                self.game_manager.is_collision_with_treasure or \
+                self.game_manager.is_collision_with_boss or \
+                self.game_manager.is_collision_with_plant or \
+                self.game_manager.is_collision_with_danger):
+            self.dialog_box.message_1 = None
+            self.dialog_box.message_2 = None
+
         self.buttons[self.MOVE].draw(screen)
         self.buttons[self.DROP].draw(screen)
         self.buttons[self.PICK_UP].draw(screen)
         self.buttons[self.FIGHT].draw(screen)
         self.buttons[self.LEAVE].draw(screen)
+        self.dialog_box.draw()
 
         time_surface = font.render(f"Tempo: {self.game_manager.time}", True, WHITE)
         screen.blit(time_surface, (640, 22))
@@ -860,70 +981,95 @@ for _ in range(3):
 path = random_path(G, player.position, treasure.position)
 
 # Create game manager and game interface
+dialog_box = DialogBox(None, None)
 game_manager = GameManager(G, path, player, treasure, monsters, weapons, plants, bosses, dangers)
-game_interface = GameInterface(game_manager)
+game_interface = GameInterface(game_manager, dialog_box)
 
 # Mark the edges along the path as black
 for i in range(len(path) - 1):
     G[path[i]][path[i + 1]]['color'] = (171, 171, 171)
 
 # Main loop
-running = True
-while running:
-    clicked_button = None
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+main_loop = True
+running = False
+while main_loop:
+    if running:
+        clicked_button = None
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                main_loop = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                clicked_button = game_interface.handle_click(pygame.mouse.get_pos())
+
+        game_manager.update_game_state(clicked_button)
+        health_bar.attribute = player.health
+        treasure_bar.attribute = int(player.treasure)
+        attack_bar.attribute = player.attack_points
+
+        # Check game state
+        if game_manager.is_game_over():
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            clicked_button = game_interface.handle_click(pygame.mouse.get_pos())
 
-    game_manager.update_game_state(clicked_button)
-    health_bar.attribute = player.health
-    treasure_bar.attribute = player.treasure
-    attack_bar.attribute = player.attack_points
+        # Clear the screen
+        screen.fill(WHITE)
+        background_map(background)
+        draw_menu_interface()
 
-    # Check game state
-    if game_manager.is_game_over():
-        pass
+        # Draw nodes and edges of the graph
+        for node in G.nodes:
+            pygame.draw.circle(screen, BLACK, graph_to_screen(node), 5)
 
-    # Clear the screen
-    screen.fill(WHITE)
-    background_map(background)
-    draw_menu_interface()
+        for edge in G.edges:
+            color = G[edge[0]][edge[1]].get('color', BLUE)
+            pygame.draw.line(screen, color, graph_to_screen(edge[0]), graph_to_screen(edge[1]), 2)
 
-    # Draw nodes and edges of the graph
-    for node in G.nodes:
-        pygame.draw.circle(screen, BLACK, graph_to_screen(node), 5)
+        # Draw entities
+        for boss in bosses:
+            boss.draw()
+        for monster in monsters:
+            if monster.health > 0:
+                monster.draw()
+        for weapon in weapons:
+            if not weapon.being_used:
+                weapon.draw()
+        for danger in dangers:
+            danger.draw()
+        for plant in plants:
+            plant.draw()
+        treasure.draw()
+        player.draw()
 
-    for edge in G.edges:
-        color = G[edge[0]][edge[1]].get('color', BLUE)
-        pygame.draw.line(screen, color, graph_to_screen(edge[0]), graph_to_screen(edge[1]), 2)
+        health_bar.draw(screen)
+        treasure_bar.draw(screen)
+        attack_bar.draw(screen)
 
-    # Draw entities
-    for boss in bosses:
-        boss.draw()
-    for monster in monsters:
-        if monster.health > 0:
-            monster.draw()
-    for weapon in weapons:
-        if not weapon.being_used:
-            weapon.draw()
-    for danger in dangers:
-        danger.draw()
-    for plant in plants:
-        plant.draw()
-    player.draw()
-    treasure.draw()
+        # Draw game interface
+        game_interface.draw(screen)
 
-    health_bar.draw(screen)
-    treasure_bar.draw(screen)
-    attack_bar.draw(screen)
+        # Update the display
+        pygame.display.flip()
+    else:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                main_loop = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                game_manager.player_won = False
+                game_manager.game_over = False
+                running = True
 
-    # Draw game interface
-    game_interface.draw(screen)
+        tela = None
+        if game_manager.player_won:
+            tela = tela_vitoria
+        elif game_manager.game_over:
+            tela = tela_morte
+        else:
+            tela = tela_inicio
 
-    # Update the display
-    pygame.display.flip()
+        screen.blit(tela, (0, 0))
+        # Update the display
+        pygame.display.flip()
+
+
 
 # Quit Pygame
 pygame.quit()
